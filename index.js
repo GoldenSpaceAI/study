@@ -8,21 +8,20 @@ import dotenv from "dotenv";
 dotenv.config();
 const app = express();
 
-// Resolve current directory (since ES modules don’t have __dirname)
+// Resolve current dir (works with ES modules)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Middleware
 app.use(express.json());
 
-// 1. Serve static frontend (HTML, CSS, JS in /public)
-app.use(express.static(path.join(__dirname, "public")));
+// 1. Serve static files directly from repo root
+app.use(express.static(__dirname));
 
 // 2. API to add points
 app.post("/api/points/add", (req, res) => {
   const { points, reason, storyId, mistakes } = req.body;
   console.log("Points awarded:", { points, reason, storyId, mistakes });
-  // TODO: Save to Supabase or DB later
   res.json({ ok: true, total: points });
 });
 
@@ -37,7 +36,7 @@ app.post("/api/check", async (req, res) => {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "gpt-4o",
         messages: [
           {
             role: "system",
@@ -60,9 +59,9 @@ app.post("/api/check", async (req, res) => {
   }
 });
 
-// 4. Fallback → always serve index.html (so / goes to your site, not text)
+// 4. Fallback → always serve index.html for root or unknown routes
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 // Start server
