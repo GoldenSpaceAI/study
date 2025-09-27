@@ -1,26 +1,32 @@
+// index.js
 import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
 import fetch from "node-fetch";
 import dotenv from "dotenv";
 
 dotenv.config();
 const app = express();
+
+// Resolve current directory (since ES modules don’t have __dirname)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Middleware
 app.use(express.json());
 
-// Health check
-app.get("/", (req, res) => {
-  res.send("Study Rewards API is running 🚀");
-});
+// 1. Serve static frontend (HTML, CSS, JS in /public)
+app.use(express.static(path.join(__dirname, "public")));
 
-// Endpoint for points (called from your HTML)
+// 2. API to add points
 app.post("/api/points/add", (req, res) => {
-  // In production: save to Supabase, database, etc.
-  // For now just echo
   const { points, reason, storyId, mistakes } = req.body;
-  console.log("Points awarded:", req.body);
+  console.log("Points awarded:", { points, reason, storyId, mistakes });
+  // TODO: Save to Supabase or DB later
   res.json({ ok: true, total: points });
 });
 
-// Example: check spoken word with GPT-4o
+// 3. API to check reading accuracy with OpenAI GPT-4o
 app.post("/api/check", async (req, res) => {
   const { expectedLine, heardLine } = req.body;
   try {
@@ -33,19 +39,32 @@ app.post("/api/check", async (req, res) => {
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "You are a reading tutor. Compare what the child read to the expected text. Report if words are missing or wrong." },
-          { role: "user", content: `Expected: \"${expectedLine}\". Heard: \"${heardLine}\". Tell me only the wrong words or 'no mistakes'.` }
+          {
+            role: "system",
+            content:
+              "You are a reading tutor. Compare what the child read to the expected text. Reply with the wrong words or say 'no mistakes'."
+          },
+          {
+            role: "user",
+            content: `Expected: \"${expectedLine}\". Heard: \"${heardLine}\".`
+          }
         ]
       })
     });
+
     const data = await completion.json();
     res.json(data);
   } catch (err) {
-    console.error(err);
+    console.error("OpenAI error:", err);
     res.status(500).json({ error: "OpenAI call failed" });
   }
 });
 
-// Render will use PORT
+// 4. Fallback → always serve index.html (so / goes to your site, not text)
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+// Start server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Server running on", PORT));
+app.listen(PORT, () => console.log(`✅ Server running on http://localhost:${PORT}`));
