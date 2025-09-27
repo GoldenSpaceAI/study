@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Study Rewards — Math & English</title>
+  <style>
+    :root{
+      --bg: #0b1020;
+      --card: #111833;
+      --text: #f5f7fb;
+      --muted: #b8c0e0;
+      --brand: #ffd54a; /* warm gold */
+      --brand-2:#ffb300;
+      --ok: #21c17a;
+      --warn:#ff6b6b;
+      --ring: rgba(255, 213, 74, .35);
+    }
+    *{box-sizing:border-box}
+    html, body {height:100%}
+    body{
+      margin:0; color:var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:
+        radial-gradient(1200px 600px at 85% -10%, rgba(255,213,74,.15), transparent 40%),
+        radial-gradient(900px 600px at -10% 120%, rgba(116,130,255,.15), transparent 35%),
+        var(--bg);
+    }
+    .wrap{max-width:1100px; margin:0 auto; padding:24px;}
+    header{display:flex; align-items:center; gap:16px; margin-bottom:24px}
+    .logo{
+      width:44px; height:44px; border-radius:12px; display:grid; place-items:center;
+      background:linear-gradient(135deg, var(--brand), var(--brand-2)); color:#2a2000; font-weight:800;
+      box-shadow:0 8px 24px rgba(255,213,74,.25);
+    }
+    h1{font-size:clamp(20px, 3vw, 28px); margin:0}
+    p.lead{margin:.25rem 0 0; color:var(--muted)}
+
+    /* Money badge */
+    .money{position:fixed; top:12px; left:12px; z-index:10;}
+    .money .card{display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid rgba(255,255,255,.06);
+      padding:10px 12px; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,.25)}
+    .money .amount{font-weight:800; font-size:18px}
+    .money button{border:none; background:#1b244a; color:var(--text); padding:6px 10px; border-radius:10px; cursor:pointer}
+    .money button:hover{outline:2px solid var(--ring)}
+    .money small{color:var(--muted)}
+
+    /* Grid */
+    .grid{display:grid; grid-template-columns: repeat(12, 1fr); gap:18px}
+    .col{grid-column: span 12;}
+    @media(min-width:760px){ .col-6{grid-column: span 6;} }
+
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:20px; position:relative; overflow:hidden;
+    }
+    .card h2{margin:0 0 8px; font-size:22px}
+    .card p{margin:0 0 14px; color:var(--muted)}
+
+    .actions{display:flex; flex-wrap:wrap; gap:10px}
+    a.button{display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      text-decoration:none; color:#0b1020; background:linear-gradient(180deg, var(--brand), var(--brand-2));
+      padding:10px 14px; border-radius:12px; font-weight:700; box-shadow:0 8px 18px rgba(255,213,74,.25)}
+    a.button.secondary{background:#1b244a; color:var(--text); box-shadow:none; border:1px solid rgba(255,255,255,.1)}
+    a.button:hover{outline:3px solid var(--ring)}
+
+    .tip{position:absolute; right:14px; top:14px; font-size:12px; color:var(--muted)}
+
+    footer{margin:28px 0 10px; text-align:center; color:var(--muted); font-size:12px}
+  </style>
+</head>
+<body>
+  <!-- Money collected (top-left) -->
+  <div class="money" aria-live="polite">
+    <div class="card">
+      <div>💰</div>
+      <div>
+        <div class="amount" id="moneyAmount">$0.00</div>
+        <small>Total collected</small>
+      </div>
+      <div style="display:flex; gap:6px; margin-left:6px">
+        <button id="addBtn" title="Add $1">+1</button>
+        <button id="subBtn" title="Remove $1">−1</button>
+        <button id="resetBtn" title="Reset">↺</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <header>
+      <div class="logo">★</div>
+      <div>
+        <h1>Go, Superstar! 📚✨</h1>
+        <p class="lead">Earn rewards by practicing <strong>Math</strong> and <strong>English</strong>. Choose a box and start!</p>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Math Card -->
+      <section class="card col col-6" aria-labelledby="mathTitle">
+        <div class="tip">Math Zone</div>
+        <h2 id="mathTitle">Math Box</h2>
+        <p>Solve problems and check True/False to boost confidence and score rewards.</p>
+        <div class="actions">
+          <a class="button" href="solve-maths.html" aria-label="Open Solve Maths">➗ Solve Maths</a>
+          <a class="button secondary" href="true-false.html" aria-label="Open True or False">✔️ True / False</a>
+        </div>
+      </section>
+
+      <!-- English Card -->
+      <section class="card col col-6" aria-labelledby="engTitle">
+        <div class="tip">English Zone</div>
+        <h2 id="engTitle">English Box</h2>
+        <p>Read a story, then try a quick one-minute reading sprint!</p>
+        <div class="actions">
+          <a class="button" href="read-story.html" aria-label="Read Story">📖 Read Story</a>
+          <a class="button secondary" href="read-story-1min.html" aria-label="One minute reading challenge">⏱️ 1‑Minute Read</a>
+        </div>
+      </section>
+    </div>
+
+    <footer>
+      Made with ❤️ to cheer you on. Keep going—you've got this!
+    </footer>
+  </div>
+
+  <script>
+    // Simple money tracker with localStorage persistence
+    (function(){
+      const AMOUNT_KEY = 'studyRewards:money';
+      const amountEl = document.getElementById('moneyAmount');
+      const addBtn = document.getElementById('addBtn');
+      const subBtn = document.getElementById('subBtn');
+      const resetBtn = document.getElementById('resetBtn');
+
+      const fmt = (n) => `$${n.toFixed(2)}`;
+      const get = () => {
+        const n = parseFloat(localStorage.getItem(AMOUNT_KEY));
+        return isNaN(n) ? 0 : n;
+      };
+      const set = (n) => {
+        localStorage.setItem(AMOUNT_KEY, String(n));
+        amountEl.textContent = fmt(n);
+      };
+
+      // initialize
+      set(get());
+
+      addBtn.addEventListener('click', () => set(Math.max(0, get() + 1)));
+      subBtn.addEventListener('click', () => set(Math.max(0, get() - 1)));
+      resetBtn.addEventListener('click', () => set(0));
+    })();
+  </script>
+</body>
+</html>
