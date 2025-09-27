@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>1‑Minute Read Challenge</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#111833; --text:#f5f7fb; --muted:#b8c0e0; --brand:#ffd54a; --brand2:#ffb300; --ring:rgba(255,213,74,.35);
+      --ok:#21c17a; --warn:#ff6b6b; --ink:#0b1020;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--text);
+      background:
+        radial-gradient(1200px 600px at 85% -10%, rgba(255,213,74,.15), transparent 40%),
+        radial-gradient(900px 600px at -10% 120%, rgba(116,130,255,.15), transparent 35%),
+        var(--bg);
+    }
+    .wrap{max-width:1000px;margin:0 auto;padding:24px}
+    header{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+    .logo{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#2a2000;font-weight:800;box-shadow:0 8px 24px rgba(255,213,74,.25)}
+    h1{margin:0;font-size:clamp(20px,3vw,28px)}
+    p.lead{margin:.35rem 0 0;color:var(--muted)}
+
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;margin-top:16px}
+    .col-4{grid-column:span 12}
+    @media(min-width:860px){.col-4{grid-column:span 4}}
+
+    .card{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px}
+    .story{cursor:pointer}
+    .story h3{margin:0 0 6px;font-size:18px}
+    .story p{margin:0;color:var(--muted);font-size:14px}
+    .story[aria-selected="true"]{outline:3px solid var(--ring)}
+
+    .panel{margin-top:18px;display:grid;grid-template-columns:1fr;gap:16px}
+    .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+    .controls button{border:none;background:linear-gradient(180deg,var(--brand),var(--brand2));color:var(--ink);padding:10px 14px;border-radius:12px;font-weight:800;cursor:pointer;box-shadow:0 8px 18px rgba(255,213,74,.25)}
+    .controls button.secondary{background:#1b244a;color:var(--text);box-shadow:none;border:1px solid rgba(255,255,255,.12)}
+    .controls .timer{min-width:88px;text-align:center;font-variant-numeric:tabular-nums;background:#1b244a;padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12)}
+
+    .reading{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px;line-height:1.6;user-select:none}
+    .reading[hidden]{display:none}
+    .reading h4{margin:0 0 10px}
+    .reading p{margin:0 0 10px}
+
+    .notice{padding:12px 14px;border-radius:12px;background:#1b244a;border:1px solid rgba(255,255,255,.12);color:var(--muted)}
+    .success{background:rgba(33,193,122,.15);border-color:rgba(33,193,122,.4);color:#bff2d9}
+    .error{background:rgba(255,107,107,.15);border-color:rgba(255,107,107,.35);color:#ffd1d1}
+
+    a.link{color:var(--brand)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">⏱️</div>
+      <div>
+        <h1>1‑Minute Read Challenge</h1>
+        <p class="lead">Pick a story, press <strong>Start</strong>, and finish reading before the timer hits zero to earn <strong>100,000 points</strong>! 🎉</p>
+      </div>
+    </header>
+
+    <!-- Story choices -->
+    <div class="grid" id="storyGrid" role="listbox" aria-label="Choose a story">
+      <article class="card story col-4" role="option" tabindex="0" data-id="s1">
+        <h3>The Brave Little Comet</h3>
+        <p>A tiny comet discovers its own light while racing across the night sky.</p>
+      </article>
+      <article class="card story col-4" role="option" tabindex="0" data-id="s2">
+        <h3>Mina and the Library Door</h3>
+        <p>A curious girl finds a secret door that opens only when she reads aloud.</p>
+      </article>
+      <article class="card story col-4" role="option" tabindex="0" data-id="s3">
+        <h3>The Clockmaker’s Cat</h3>
+        <p>A cat who loves ticking sounds helps fix the town’s biggest clock.</p>
+      </article>
+    </div>
+
+    <!-- Controls -->
+    <section class="panel">
+      <div class="controls">
+        <button id="startBtn" aria-disabled="true">Start (1:00)</button>
+        <button id="finishBtn" class="secondary" disabled>Finish</button>
+        <div class="timer" id="timer">01:00</div>
+        <div id="status" class="notice" role="status">Select a story to begin.</div>
+      </div>
+
+      <!-- Reading area -->
+      <div id="reading" class="reading" hidden aria-live="polite">
+        <h4 id="readingTitle"></h4>
+        <div id="readingBody"></div>
+      </div>
+
+      <div class="notice" id="integrationHint">
+        Dev note: finishing on time will <strong>POST</strong> to <code>/api/points/add</code> with <code>{ points: 100000, reason, storyId }</code>. If the server is missing, points are saved locally.
+      </div>
+    </section>
+
+    <p style="margin-top:22px"><a class="link" href="index.html">← Back to Home</a></p>
+  </div>
+
+  <script>
+    // --- Config ---
+    const ONE_MINUTE = 60; // seconds
+    const AWARD_POINTS = 100000;
+    const SERVER_ENDPOINT = '/api/points/add'; // change if your backend differs
+    const LOCAL_POINTS_KEY = 'studyRewards:points';
+
+    // --- Story data ---
+    const STORIES = {
+      s1: {
+        title: 'The Brave Little Comet',
+        body: [
+          'Far beyond the mountains, a tiny comet blinked awake. Every night it watched the great planets shine and wished to sparkle just like them.',
+          'One evening, the comet whispered, “I will try.” It pushed with all its might and whooshed across the sky. Birds paused. Children pointed. It glowed brighter with every brave turn.',
+          'At dawn, the comet tucked behind the moon and giggled. It had found its own light—not by copying others, but by moving forward, even when small steps felt big.'
+        ]
+      },
+      s2: {
+        title: 'Mina and the Library Door',
+        body: [
+          'Mina loved the library. One shelf had a slim, brass door with no handle. On it, a note: “Opens for voices that love stories.”',
+          'Mina read her favorite lines aloud. The door clicked open to a cozy room of pillows and whispering pages. The books hummed as if they remembered her.',
+          'Inside, she learned that doors open for those who show up with curiosity and care. From then on, Mina’s voice carried courage into every new chapter.'
+        ]
+      },
+      s3: {
+        title: 'The Clockmaker’s Cat',
+        body: [
+          'Mr. Perla fixed clocks, but his cat, Tock, loved the steady tick-tock best. One stormy day, the town clock fell silent.',
+          'Tock leapt onto the workbench, nudging the right gears. Mr. Perla followed the cat’s rhythm—tick, tock, tick—and the clock roared back to life.',
+          'People cheered at the square as time returned. From then on, Tock wore a tiny collar bell, and the town kept perfect time.'
+        ]
+      }
+    };
+
+    // --- State ---
+    let selected = null;
+    let seconds = ONE_MINUTE;
+    let running = false;
+    let countdown = null;
+    let finished = false;
+
+    // --- DOM ---
+    const storyGrid = document.getElementById('storyGrid');
+    const startBtn = document.getElementById('startBtn');
+    const finishBtn = document.getElementById('finishBtn');
+    const timerEl = document.getElementById('timer');
+    const statusEl = document.getElementById('status');
+    const reading = document.getElementById('reading');
+    const readingTitle = document.getElementById('readingTitle');
+    const readingBody = document.getElementById('readingBody');
+
+    // Helper: format mm:ss
+    function fmt(s){ const m = Math.floor(s/60); const sec = String(s%60).padStart(2,'0'); return `${m}:${sec}`; }
+
+    // Helper: save points locally
+    function addLocalPoints(n){
+      const cur = parseInt(localStorage.getItem(LOCAL_POINTS_KEY) || '0', 10);
+      const val = (isNaN(cur) ? 0 : cur) + n;
+      localStorage.setItem(LOCAL_POINTS_KEY, String(val));
+      return val;
+    }
+
+    // Award points (server first, fallback local)
+    async function awardPoints(storyId){
+      const payload = { points: AWARD_POINTS, reason: '1-minute story finish', storyId };
+      try{
+        const res = await fetch(SERVER_ENDPOINT, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        });
+        if(!res.ok) throw new Error('Server returned ' + res.status);
+        const data = await res.json().catch(()=>({}));
+        statusEl.className = 'notice success';
+        statusEl.textContent = `Great job! +${AWARD_POINTS.toLocaleString()} points added${data.total? ' (total: '+data.total.toLocaleString()+')' : ''}.`;
+      } catch(err){
+        const total = addLocalPoints(AWARD_POINTS);
+        statusEl.className = 'notice success';
+        statusEl.textContent = `Great job! +${AWARD_POINTS.toLocaleString()} points saved locally (total: ${total.toLocaleString()}).`;
+      }
+    }
+
+    function resetUI(){
+      running = false; finished = false; seconds = ONE_MINUTE; clearInterval(countdown);
+      timerEl.textContent = fmt(seconds);
+      startBtn.textContent = 'Start (1:00)';
+      startBtn.removeAttribute('aria-busy');
+      finishBtn.disabled = true;
+      if(!selected){ startBtn.setAttribute('aria-disabled','true'); } else { startBtn.removeAttribute('aria-disabled'); }
+    }
+
+    function renderStory(){
+      if(!selected) return;
+      const s = STORIES[selected];
+      readingTitle.textContent = s.title;
+      readingBody.innerHTML = s.body.map(p=>`<p>${p}</p>`).join('');
+    }
+
+    // Select a story
+    storyGrid.addEventListener('click', (e)=>{
+      const card = e.target.closest('.story');
+      if(!card) return;
+      if(running) return; // cannot switch during a run
+      Array.from(document.querySelectorAll('.story')).forEach(el=>el.setAttribute('aria-selected','false'));
+      card.setAttribute('aria-selected','true');
+      selected = card.dataset.id;
+      statusEl.className = 'notice';
+      statusEl.textContent = 'Story selected. Press Start when ready.';
+      startBtn.removeAttribute('aria-disabled');
+      renderStory();
+    });
+
+    // Keyboard selection support
+    storyGrid.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); e.target.click(); }
+    });
+
+    // Start the challenge
+    startBtn.addEventListener('click', ()=>{
+      if(!selected || running) return;
+      running = true; finished = false; seconds = ONE_MINUTE;
+      reading.hidden = false;
+      statusEl.className = 'notice';
+      statusEl.textContent = 'Timer started! Read aloud and press Finish before time ends.';
+      startBtn.setAttribute('aria-busy','true');
+      finishBtn.disabled = false;
+
+      countdown = setInterval(()=>{
+        seconds -= 1;
+        timerEl.textContent = fmt(seconds);
+        if(seconds <= 0){
+          clearInterval(countdown); running = false;
+          // Time up: hide text if not finished
+          if(!finished){
+            reading.hidden = true;
+            statusEl.className = 'notice error';
+            statusEl.textContent = '⏰ Time\'s up! The story is hidden. Try again.';
+            resetUI();
+          }
+        }
+      }, 1000);
+    });
+
+    // Finish early (success)
+    finishBtn.addEventListener('click', async()=>{
+      if(!running) return;
+      finished = true; running = false; clearInterval(countdown);
+      finishBtn.disabled = true;
+      statusEl.className = 'notice';
+      statusEl.textContent = 'Checking… awarding points…';
+      await awardPoints(selected);
+      resetUI();
+    });
+
+    // Initial state
+    resetUI();
+  </script>
+</body>
+</html>
