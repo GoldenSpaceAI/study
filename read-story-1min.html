@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>1‑Minute Read Challenge</title>
+  <title>Read Story — Timed Challenge</title>
   <style>
     :root{
       --bg:#0b1020; --card:#111833; --text:#f5f7fb; --muted:#b8c0e0; --brand:#ffd54a; --brand2:#ffb300; --ring:rgba(255,213,74,.35);
@@ -17,7 +17,7 @@
         radial-gradient(900px 600px at -10% 120%, rgba(116,130,255,.15), transparent 35%),
         var(--bg);
     }
-    .wrap{max-width:1000px;margin:0 auto;padding:24px}
+    .wrap{max-width:1100px;margin:0 auto;padding:24px}
     header{display:flex;align-items:center;gap:14px;margin-bottom:18px}
     .logo{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#2a2000;font-weight:800;box-shadow:0 8px 24px rgba(255,213,74,.25)}
     h1{margin:0;font-size:clamp(20px,3vw,28px)}
@@ -56,33 +56,20 @@
     <header>
       <div class="logo">⏱️</div>
       <div>
-        <h1>1‑Minute Read Challenge</h1>
-        <p class="lead">Pick a story, press <strong>Start</strong>, and finish reading before the timer hits zero to earn <strong>100,000 points</strong>! 🎉</p>
+        <h1>Timed Reading Challenge</h1>
+        <p class="lead">Choose a Grade‑4 story. Most are <strong>1:00 = 100,000 pts</strong>; the last three are <strong>0:30 = 200,000 pts</strong>. Finish before time ends to earn the reward! 🎉</p>
       </div>
     </header>
 
-    <!-- Story choices -->
-    <div class="grid" id="storyGrid" role="listbox" aria-label="Choose a story">
-      <article class="card story col-4" role="option" tabindex="0" data-id="s1">
-        <h3>The Brave Little Comet</h3>
-        <p>A tiny comet discovers its own light while racing across the night sky.</p>
-      </article>
-      <article class="card story col-4" role="option" tabindex="0" data-id="s2">
-        <h3>Mina and the Library Door</h3>
-        <p>A curious girl finds a secret door that opens only when she reads aloud.</p>
-      </article>
-      <article class="card story col-4" role="option" tabindex="0" data-id="s3">
-        <h3>The Clockmaker’s Cat</h3>
-        <p>A cat who loves ticking sounds helps fix the town’s biggest clock.</p>
-      </article>
-    </div>
+    <!-- Story choices (rendered by JS) -->
+    <div class="grid" id="storyGrid" role="listbox" aria-label="Choose a story"></div>
 
     <!-- Controls -->
     <section class="panel">
       <div class="controls">
-        <button id="startBtn" aria-disabled="true">Start (1:00)</button>
+        <button id="startBtn" aria-disabled="true">Start</button>
         <button id="finishBtn" class="secondary" disabled>Finish</button>
-        <div class="timer" id="timer">01:00</div>
+        <div class="timer" id="timer">--:--</div>
         <div id="status" class="notice" role="status">Select a story to begin.</div>
       </div>
 
@@ -93,7 +80,7 @@
       </div>
 
       <div class="notice" id="integrationHint">
-        Dev note: finishing on time will <strong>POST</strong> to <code>/api/points/add</code> with <code>{ points: 100000, reason, storyId }</code>. If the server is missing, points are saved locally.
+        Dev note: finishing on time will <strong>POST</strong> to <code>/api/points/add</code> with <code>{ points, reason, storyId }</code>. If the server is missing, points are saved locally.
       </div>
     </section>
 
@@ -101,43 +88,86 @@
   </div>
 
   <script>
-    // --- Config ---
-    const ONE_MINUTE = 60; // seconds
-    const AWARD_POINTS = 100000;
-    const SERVER_ENDPOINT = '/api/points/add'; // change if your backend differs
+    const SERVER_ENDPOINT = '/api/points/add';
     const LOCAL_POINTS_KEY = 'studyRewards:points';
 
-    // --- Story data ---
+    // --- Story data (13 total). s1-s10 => 60s/100k, s11-s13 => 30s/200k ---
     const STORIES = {
-      s1: {
-        title: 'The Brave Little Comet',
-        body: [
-          'Far beyond the mountains, a tiny comet blinked awake. Every night it watched the great planets shine and wished to sparkle just like them.',
-          'One evening, the comet whispered, “I will try.” It pushed with all its might and whooshed across the sky. Birds paused. Children pointed. It glowed brighter with every brave turn.',
-          'At dawn, the comet tucked behind the moon and giggled. It had found its own light—not by copying others, but by moving forward, even when small steps felt big.'
-        ]
-      },
-      s2: {
-        title: 'Mina and the Library Door',
-        body: [
-          'Mina loved the library. One shelf had a slim, brass door with no handle. On it, a note: “Opens for voices that love stories.”',
-          'Mina read her favorite lines aloud. The door clicked open to a cozy room of pillows and whispering pages. The books hummed as if they remembered her.',
-          'Inside, she learned that doors open for those who show up with curiosity and care. From then on, Mina’s voice carried courage into every new chapter.'
-        ]
-      },
-      s3: {
-        title: 'The Clockmaker’s Cat',
-        body: [
-          'Mr. Perla fixed clocks, but his cat, Tock, loved the steady tick-tock best. One stormy day, the town clock fell silent.',
-          'Tock leapt onto the workbench, nudging the right gears. Mr. Perla followed the cat’s rhythm—tick, tock, tick—and the clock roared back to life.',
-          'People cheered at the square as time returned. From then on, Tock wore a tiny collar bell, and the town kept perfect time.'
-        ]
-      }
+      // Original 3
+      s1: { title:'The Brave Little Comet', duration:60, points:100000, desc:'1:00 • 100k', body:[
+        'Far beyond the mountains, a tiny comet blinked awake. Every night it watched the great planets shine and wished to sparkle just like them.',
+        'One evening, the comet whispered, “I will try.” It pushed with all its might and whooshed across the sky. Birds paused. Children pointed. It glowed brighter with every brave turn.',
+        'At dawn, the comet tucked behind the moon and giggled. It had found its own light—not by copying others, but by moving forward, even when small steps felt big.'
+      ]},
+      s2: { title:'Mina and the Library Door', duration:60, points:100000, desc:'1:00 • 100k', body:[
+        'Mina loved the library. One shelf had a slim, brass door with no handle. On it, a note: “Opens for voices that love stories.”',
+        'Mina read her favorite lines aloud. The door clicked open to a cozy room of pillows and whispering pages. The books hummed as if they remembered her.',
+        'Inside, she learned that doors open for those who show up with curiosity and care. From then on, Mina’s voice carried courage into every new chapter.'
+      ]},
+      s3: { title:'The Clockmaker’s Cat', duration:60, points:100000, desc:'1:00 • 100k', body:[
+        'Mr. Perla fixed clocks, but his cat, Tock, loved the steady tick-tock best. One stormy day, the town clock fell silent.',
+        'Tock leapt onto the workbench, nudging the right gears. Mr. Perla followed the cat’s rhythm—tick, tock, tick—and the clock roared back to life.',
+        'People cheered at the square as time returned. From then on, Tock wore a tiny collar bell, and the town kept perfect time.'
+      ]},
+
+      // New Grade 4 (1:00 / 100k)
+      s4: { title:'The School Trip', duration:60, points:100000, desc:'1:00 • 100k', body:[
+        'Our class went to the zoo on Friday morning. We carried notebooks to sketch the animals we liked best.',
+        'The giraffes moved like tall, careful cranes, and the lions slept in a golden pile of paws and tails.',
+        'On the way home, we compared drawings and shared snacks. Everyone agreed the penguins had the funniest walk.'
+      ]},
+      s5: { title:'The Soccer Game', duration:60, points:100000, desc:'1:00 • 100k', body:[
+        'Ali dribbled past two defenders and looked up at the goal. The crowd held its breath.',
+        'He kicked low and fast. The ball kissed the inside of the post and spun into the net.',
+        'His team lifted him onto their shoulders, and the coach said practice had turned into victory.'
+      ]},
+      s6: { title:'The Busy Ants', duration:60, points:100000, desc:'1:00 • 100k', body:[
+        'In the garden, a thin line of ants crossed the path like moving beads.',
+        'Each ant carried a crumb bigger than its head, yet none dropped their load.',
+        'Working together, they built a tiny mountain of food for the nest.'
+      ]},
+      s7: { title:'The Magic Pen', duration:60, points:100000, desc:'1:00 • 100k', body:[
+        'Lila found a pen that wrote in colors she had never seen—sunset orange and moonlight silver.',
+        'When she drew a door, a cool breeze slipped through the paper as if the picture could breathe.',
+        'She learned the pen’s secret: imagination is the ink that opens every door.'
+      ]},
+      s8: { title:'The River Market', duration:60, points:100000, desc:'1:00 • 100k', body:[
+        'Boats tied to wooden posts rocked gently as sellers stacked fruit in bright pyramids.',
+        'A violinist played a cheerful tune while children counted coins for sweet figs.',
+        'By noon the breeze smelled like oranges and fresh bread, and the river shone like glass.'
+      ]},
+      s9: { title:'The Paper Airplane', duration:60, points:100000, desc:'1:00 • 100k', body:[
+        'Noah folded the paper along the dotted lines his grandfather had taught him.',
+        'He launched the plane, and it glided in a wide, patient circle around the room.',
+        'When it landed, they wrote their names on the wing and tried a new design.'
+      ]},
+      s10: { title:'The Night Hike', duration:60, points:100000, desc:'1:00 • 100k', body:[
+        'Under a blanket of stars, our class followed the ranger along the trail.',
+        'We clicked off our flashlights and listened to crickets tuning the dark.',
+        'When an owl called once, twice, three times, it felt like the forest said hello.'
+      ]},
+
+      // Last 3 (0:30 / 200k)
+      s11: { title:'Lightning Poem', duration:30, points:200000, desc:'0:30 • 200k', body:[
+        'Lightning writes a fast letter across the sky, then folds it into thunder.',
+        'We count the seconds and guess how far the storm has traveled.',
+        'Rain taps the roof in neat little lines of rhyme.'
+      ]},
+      s12: { title:'Market Math', duration:30, points:200000, desc:'0:30 • 200k', body:[
+        'Tala buys three apples and two pears. She counts the coins and plans to share.',
+        'The vendor smiles as the scale balances just right.',
+        'Numbers feel friendly when they match what we see.'
+      ]},
+      s13: { title:'The Fast Train', duration:30, points:200000, desc:'0:30 • 200k', body:[
+        'The train hums like a silver arrow, windows flickering with tiny movies of towns.',
+        'Seats rumble softly as we fly past fields and rivers.',
+        'We arrive early, and the station clock nods in approval.'
+      ]}
     };
 
     // --- State ---
     let selected = null;
-    let seconds = ONE_MINUTE;
+    let seconds = 0;
     let running = false;
     let countdown = null;
     let finished = false;
@@ -152,6 +182,22 @@
     const readingTitle = document.getElementById('readingTitle');
     const readingBody = document.getElementById('readingBody');
 
+    // Build story cards
+    function buildGrid(){
+      const frag = document.createDocumentFragment();
+      Object.entries(STORIES).forEach(([id, s])=>{
+        const art = document.createElement('article');
+        art.className = 'card story col-4';
+        art.setAttribute('role','option');
+        art.setAttribute('tabindex','0');
+        art.dataset.id = id;
+        art.innerHTML = `<h3>${s.title}</h3><p>Grade 4 • ${s.desc}</p>`;
+        frag.appendChild(art);
+      });
+      storyGrid.innerHTML = '';
+      storyGrid.appendChild(frag);
+    }
+
     // Helper: format mm:ss
     function fmt(s){ const m = Math.floor(s/60); const sec = String(s%60).padStart(2,'0'); return `${m}:${sec}`; }
 
@@ -165,7 +211,9 @@
 
     // Award points (server first, fallback local)
     async function awardPoints(storyId){
-      const payload = { points: AWARD_POINTS, reason: '1-minute story finish', storyId };
+      const s = STORIES[storyId];
+      if(!s) return;
+      const payload = { points: s.points, reason: `timed story ${s.duration}s`, storyId };
       try{
         const res = await fetch(SERVER_ENDPOINT, {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
@@ -173,18 +221,20 @@
         if(!res.ok) throw new Error('Server returned ' + res.status);
         const data = await res.json().catch(()=>({}));
         statusEl.className = 'notice success';
-        statusEl.textContent = `Great job! +${AWARD_POINTS.toLocaleString()} points added${data.total? ' (total: '+data.total.toLocaleString()+')' : ''}.`;
+        statusEl.textContent = `Great job! +${s.points.toLocaleString()} points added${data.total? ' (total: '+data.total.toLocaleString()+')' : ''}.`;
       } catch(err){
-        const total = addLocalPoints(AWARD_POINTS);
+        const total = addLocalPoints(s.points);
         statusEl.className = 'notice success';
-        statusEl.textContent = `Great job! +${AWARD_POINTS.toLocaleString()} points saved locally (total: ${total.toLocaleString()}).`;
+        statusEl.textContent = `Great job! +${s.points.toLocaleString()} points saved locally (total: ${total.toLocaleString()}).`;
       }
     }
 
     function resetUI(){
-      running = false; finished = false; seconds = ONE_MINUTE; clearInterval(countdown);
-      timerEl.textContent = fmt(seconds);
-      startBtn.textContent = 'Start (1:00)';
+      running = false; finished = false; clearInterval(countdown);
+      const s = selected ? STORIES[selected] : null;
+      seconds = s ? s.duration : 0;
+      timerEl.textContent = s ? fmt(s.duration) : '--:--';
+      startBtn.textContent = s ? `Start (${fmt(s.duration)})` : 'Start';
       startBtn.removeAttribute('aria-busy');
       finishBtn.disabled = true;
       if(!selected){ startBtn.setAttribute('aria-disabled','true'); } else { startBtn.removeAttribute('aria-disabled'); }
@@ -193,7 +243,7 @@
     function renderStory(){
       if(!selected) return;
       const s = STORIES[selected];
-      readingTitle.textContent = s.title;
+      readingTitle.textContent = `${s.title} • ${s.desc}`;
       readingBody.innerHTML = s.body.map(p=>`<p>${p}</p>`).join('');
     }
 
@@ -205,10 +255,11 @@
       Array.from(document.querySelectorAll('.story')).forEach(el=>el.setAttribute('aria-selected','false'));
       card.setAttribute('aria-selected','true');
       selected = card.dataset.id;
+      const s = STORIES[selected];
       statusEl.className = 'notice';
-      statusEl.textContent = 'Story selected. Press Start when ready.';
-      startBtn.removeAttribute('aria-disabled');
+      statusEl.textContent = `Story selected: ${s.title}. Reward ${s.points.toLocaleString()} pts.`;
       renderStory();
+      resetUI();
     });
 
     // Keyboard selection support
@@ -219,7 +270,7 @@
     // Start the challenge
     startBtn.addEventListener('click', ()=>{
       if(!selected || running) return;
-      running = true; finished = false; seconds = ONE_MINUTE;
+      running = true; finished = false; seconds = STORIES[selected].duration;
       reading.hidden = false;
       statusEl.className = 'notice';
       statusEl.textContent = 'Timer started! Read aloud and press Finish before time ends.';
@@ -253,7 +304,320 @@
       resetUI();
     });
 
-    // Initial state
+    // Init
+    buildGrid();
+    resetUI();
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Read Story — Timed Challenge</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#111833; --text:#f5f7fb; --muted:#b8c0e0; --brand:#ffd54a; --brand2:#ffb300; --ring:rgba(255,213,74,.35);
+      --ok:#21c17a; --warn:#ff6b6b; --ink:#0b1020;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--text);
+      background:
+        radial-gradient(1200px 600px at 85% -10%, rgba(255,213,74,.15), transparent 40%),
+        radial-gradient(900px 600px at -10% 120%, rgba(116,130,255,.15), transparent 35%),
+        var(--bg);
+    }
+    .wrap{max-width:1100px;margin:0 auto;padding:24px}
+    header{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+    .logo{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#2a2000;font-weight:800;box-shadow:0 8px 24px rgba(255,213,74,.25)}
+    h1{margin:0;font-size:clamp(20px,3vw,28px)}
+    p.lead{margin:.35rem 0 0;color:var(--muted)}
+
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;margin-top:16px}
+    .col-4{grid-column:span 12}
+    @media(min-width:860px){.col-4{grid-column:span 4}}
+
+    .card{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px}
+    .story{cursor:pointer}
+    .story h3{margin:0 0 6px;font-size:18px}
+    .story p{margin:0;color:var(--muted);font-size:14px}
+    .story[aria-selected="true"]{outline:3px solid var(--ring)}
+
+    .panel{margin-top:18px;display:grid;grid-template-columns:1fr;gap:16px}
+    .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+    .controls button{border:none;background:linear-gradient(180deg,var(--brand),var(--brand2));color:var(--ink);padding:10px 14px;border-radius:12px;font-weight:800;cursor:pointer;box-shadow:0 8px 18px rgba(255,213,74,.25)}
+    .controls button.secondary{background:#1b244a;color:var(--text);box-shadow:none;border:1px solid rgba(255,255,255,.12)}
+    .controls .timer{min-width:88px;text-align:center;font-variant-numeric:tabular-nums;background:#1b244a;padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12)}
+
+    .reading{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px;line-height:1.6;user-select:none}
+    .reading[hidden]{display:none}
+    .reading h4{margin:0 0 10px}
+    .reading p{margin:0 0 10px}
+
+    .notice{padding:12px 14px;border-radius:12px;background:#1b244a;border:1px solid rgba(255,255,255,.12);color:var(--muted)}
+    .success{background:rgba(33,193,122,.15);border-color:rgba(33,193,122,.4);color:#bff2d9}
+    .error{background:rgba(255,107,107,.15);border-color:rgba(255,107,107,.35);color:#ffd1d1}
+
+    a.link{color:var(--brand)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">⏱️</div>
+      <div>
+        <h1>Timed Reading Challenge</h1>
+        <p class="lead">Choose a Grade‑4 story. Most are <strong>1:00 = 100,000 pts</strong>; the last three are <strong>0:30 = 200,000 pts</strong>. Finish before time ends to earn the reward! 🎉</p>
+      </div>
+    </header>
+
+    <!-- Story choices (rendered by JS) -->
+    <div class="grid" id="storyGrid" role="listbox" aria-label="Choose a story"></div>
+
+    <!-- Controls -->
+    <section class="panel">
+      <div class="controls">
+        <button id="startBtn" aria-disabled="true">Start</button>
+        <button id="finishBtn" class="secondary" disabled>Finish</button>
+        <div class="timer" id="timer">--:--</div>
+        <div id="status" class="notice" role="status">Select a story to begin.</div>
+      </div>
+
+      <!-- Reading area -->
+      <div id="reading" class="reading" hidden aria-live="polite">
+        <h4 id="readingTitle"></h4>
+        <div id="readingBody"></div>
+      </div>
+
+      <div class="notice" id="integrationHint">
+        Dev note: finishing on time will <strong>POST</strong> to <code>/api/points/add</code> with <code>{ points, reason, storyId }</code>. If the server is missing, points are saved locally.
+      </div>
+    </section>
+
+    <p style="margin-top:22px"><a class="link" href="index.html">← Back to Home</a></p>
+  </div>
+
+  <script>
+    const SERVER_ENDPOINT = '/api/points/add';
+    const LOCAL_POINTS_KEY = 'studyRewards:points';
+
+    // --- Story data (13 total). s1-s10 => 60s/100k, s11-s13 => 30s/200k ---
+    const STORIES = {
+      // Original 3
+      s1: { title:'The Brave Little Comet', duration:60, points:100000, desc:'1:00 • 100k', body:[
+        'Far beyond the mountains, a tiny comet blinked awake. Every night it watched the great planets shine and wished to sparkle just like them.',
+        'One evening, the comet whispered, “I will try.” It pushed with all its might and whooshed across the sky. Birds paused. Children pointed. It glowed brighter with every brave turn.',
+        'At dawn, the comet tucked behind the moon and giggled. It had found its own light—not by copying others, but by moving forward, even when small steps felt big.'
+      ]},
+      s2: { title:'Mina and the Library Door', duration:60, points:100000, desc:'1:00 • 100k', body:[
+        'Mina loved the library. One shelf had a slim, brass door with no handle. On it, a note: “Opens for voices that love stories.”',
+        'Mina read her favorite lines aloud. The door clicked open to a cozy room of pillows and whispering pages. The books hummed as if they remembered her.',
+        'Inside, she learned that doors open for those who show up with curiosity and care. From then on, Mina’s voice carried courage into every new chapter.'
+      ]},
+      s3: { title:'The Clockmaker’s Cat', duration:60, points:100000, desc:'1:00 • 100k', body:[
+        'Mr. Perla fixed clocks, but his cat, Tock, loved the steady tick-tock best. One stormy day, the town clock fell silent.',
+        'Tock leapt onto the workbench, nudging the right gears. Mr. Perla followed the cat’s rhythm—tick, tock, tick—and the clock roared back to life.',
+        'People cheered at the square as time returned. From then on, Tock wore a tiny collar bell, and the town kept perfect time.'
+      ]},
+
+      // New Grade 4 (1:00 / 100k)
+      s4: { title:'The School Trip', duration:60, points:100000, desc:'1:00 • 100k', body:[
+        'Our class went to the zoo on Friday morning. We carried notebooks to sketch the animals we liked best.',
+        'The giraffes moved like tall, careful cranes, and the lions slept in a golden pile of paws and tails.',
+        'On the way home, we compared drawings and shared snacks. Everyone agreed the penguins had the funniest walk.'
+      ]},
+      s5: { title:'The Soccer Game', duration:60, points:100000, desc:'1:00 • 100k', body:[
+        'Ali dribbled past two defenders and looked up at the goal. The crowd held its breath.',
+        'He kicked low and fast. The ball kissed the inside of the post and spun into the net.',
+        'His team lifted him onto their shoulders, and the coach said practice had turned into victory.'
+      ]},
+      s6: { title:'The Busy Ants', duration:60, points:100000, desc:'1:00 • 100k', body:[
+        'In the garden, a thin line of ants crossed the path like moving beads.',
+        'Each ant carried a crumb bigger than its head, yet none dropped their load.',
+        'Working together, they built a tiny mountain of food for the nest.'
+      ]},
+      s7: { title:'The Magic Pen', duration:60, points:100000, desc:'1:00 • 100k', body:[
+        'Lila found a pen that wrote in colors she had never seen—sunset orange and moonlight silver.',
+        'When she drew a door, a cool breeze slipped through the paper as if the picture could breathe.',
+        'She learned the pen’s secret: imagination is the ink that opens every door.'
+      ]},
+      s8: { title:'The River Market', duration:60, points:100000, desc:'1:00 • 100k', body:[
+        'Boats tied to wooden posts rocked gently as sellers stacked fruit in bright pyramids.',
+        'A violinist played a cheerful tune while children counted coins for sweet figs.',
+        'By noon the breeze smelled like oranges and fresh bread, and the river shone like glass.'
+      ]},
+      s9: { title:'The Paper Airplane', duration:60, points:100000, desc:'1:00 • 100k', body:[
+        'Noah folded the paper along the dotted lines his grandfather had taught him.',
+        'He launched the plane, and it glided in a wide, patient circle around the room.',
+        'When it landed, they wrote their names on the wing and tried a new design.'
+      ]},
+      s10: { title:'The Night Hike', duration:60, points:100000, desc:'1:00 • 100k', body:[
+        'Under a blanket of stars, our class followed the ranger along the trail.',
+        'We clicked off our flashlights and listened to crickets tuning the dark.',
+        'When an owl called once, twice, three times, it felt like the forest said hello.'
+      ]},
+
+      // Last 3 (0:30 / 200k)
+      s11: { title:'Lightning Poem', duration:30, points:200000, desc:'0:30 • 200k', body:[
+        'Lightning writes a fast letter across the sky, then folds it into thunder.',
+        'We count the seconds and guess how far the storm has traveled.',
+        'Rain taps the roof in neat little lines of rhyme.'
+      ]},
+      s12: { title:'Market Math', duration:30, points:200000, desc:'0:30 • 200k', body:[
+        'Tala buys three apples and two pears. She counts the coins and plans to share.',
+        'The vendor smiles as the scale balances just right.',
+        'Numbers feel friendly when they match what we see.'
+      ]},
+      s13: { title:'The Fast Train', duration:30, points:200000, desc:'0:30 • 200k', body:[
+        'The train hums like a silver arrow, windows flickering with tiny movies of towns.',
+        'Seats rumble softly as we fly past fields and rivers, but somthing happened a storm was comming in our way the train stopped in the middle no electricity ',
+        'the train shacked we were so scared and suddnly teh dooer opened.',
+      ]}
+    };
+
+    // --- State ---
+    let selected = null;
+    let seconds = 0;
+    let running = false;
+    let countdown = null;
+    let finished = false;
+
+    // --- DOM ---
+    const storyGrid = document.getElementById('storyGrid');
+    const startBtn = document.getElementById('startBtn');
+    const finishBtn = document.getElementById('finishBtn');
+    const timerEl = document.getElementById('timer');
+    const statusEl = document.getElementById('status');
+    const reading = document.getElementById('reading');
+    const readingTitle = document.getElementById('readingTitle');
+    const readingBody = document.getElementById('readingBody');
+
+    // Build story cards
+    function buildGrid(){
+      const frag = document.createDocumentFragment();
+      Object.entries(STORIES).forEach(([id, s])=>{
+        const art = document.createElement('article');
+        art.className = 'card story col-4';
+        art.setAttribute('role','option');
+        art.setAttribute('tabindex','0');
+        art.dataset.id = id;
+        art.innerHTML = `<h3>${s.title}</h3><p>Grade 4 • ${s.desc}</p>`;
+        frag.appendChild(art);
+      });
+      storyGrid.innerHTML = '';
+      storyGrid.appendChild(frag);
+    }
+
+    // Helper: format mm:ss
+    function fmt(s){ const m = Math.floor(s/60); const sec = String(s%60).padStart(2,'0'); return `${m}:${sec}`; }
+
+    // Helper: save points locally
+    function addLocalPoints(n){
+      const cur = parseInt(localStorage.getItem(LOCAL_POINTS_KEY) || '0', 10);
+      const val = (isNaN(cur) ? 0 : cur) + n;
+      localStorage.setItem(LOCAL_POINTS_KEY, String(val));
+      return val;
+    }
+
+    // Award points (server first, fallback local)
+    async function awardPoints(storyId){
+      const s = STORIES[storyId];
+      if(!s) return;
+      const payload = { points: s.points, reason: `timed story ${s.duration}s`, storyId };
+      try{
+        const res = await fetch(SERVER_ENDPOINT, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        });
+        if(!res.ok) throw new Error('Server returned ' + res.status);
+        const data = await res.json().catch(()=>({}));
+        statusEl.className = 'notice success';
+        statusEl.textContent = `Great job! +${s.points.toLocaleString()} points added${data.total? ' (total: '+data.total.toLocaleString()+')' : ''}.`;
+      } catch(err){
+        const total = addLocalPoints(s.points);
+        statusEl.className = 'notice success';
+        statusEl.textContent = `Great job! +${s.points.toLocaleString()} points saved locally (total: ${total.toLocaleString()}).`;
+      }
+    }
+
+    function resetUI(){
+      running = false; finished = false; clearInterval(countdown);
+      const s = selected ? STORIES[selected] : null;
+      seconds = s ? s.duration : 0;
+      timerEl.textContent = s ? fmt(s.duration) : '--:--';
+      startBtn.textContent = s ? `Start (${fmt(s.duration)})` : 'Start';
+      startBtn.removeAttribute('aria-busy');
+      finishBtn.disabled = true;
+      if(!selected){ startBtn.setAttribute('aria-disabled','true'); } else { startBtn.removeAttribute('aria-disabled'); }
+    }
+
+    function renderStory(){
+      if(!selected) return;
+      const s = STORIES[selected];
+      readingTitle.textContent = `${s.title} • ${s.desc}`;
+      readingBody.innerHTML = s.body.map(p=>`<p>${p}</p>`).join('');
+    }
+
+    // Select a story
+    storyGrid.addEventListener('click', (e)=>{
+      const card = e.target.closest('.story');
+      if(!card) return;
+      if(running) return; // cannot switch during a run
+      Array.from(document.querySelectorAll('.story')).forEach(el=>el.setAttribute('aria-selected','false'));
+      card.setAttribute('aria-selected','true');
+      selected = card.dataset.id;
+      const s = STORIES[selected];
+      statusEl.className = 'notice';
+      statusEl.textContent = `Story selected: ${s.title}. Reward ${s.points.toLocaleString()} pts.`;
+      renderStory();
+      resetUI();
+    });
+
+    // Keyboard selection support
+    storyGrid.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); e.target.click(); }
+    });
+
+    // Start the challenge
+    startBtn.addEventListener('click', ()=>{
+      if(!selected || running) return;
+      running = true; finished = false; seconds = STORIES[selected].duration;
+      reading.hidden = false;
+      statusEl.className = 'notice';
+      statusEl.textContent = 'Timer started! Read aloud and press Finish before time ends.';
+      startBtn.setAttribute('aria-busy','true');
+      finishBtn.disabled = false;
+
+      countdown = setInterval(()=>{
+        seconds -= 1;
+        timerEl.textContent = fmt(seconds);
+        if(seconds <= 0){
+          clearInterval(countdown); running = false;
+          // Time up: hide text if not finished
+          if(!finished){
+            reading.hidden = true;
+            statusEl.className = 'notice error';
+            statusEl.textContent = '⏰ Time\'s up! The story is hidden. Try again.';
+            resetUI();
+          }
+        }
+      }, 1000);
+    });
+
+    // Finish early (success)
+    finishBtn.addEventListener('click', async()=>{
+      if(!running) return;
+      finished = true; running = false; clearInterval(countdown);
+      finishBtn.disabled = true;
+      statusEl.className = 'notice';
+      statusEl.textContent = 'Checking… awarding points…';
+      await awardPoints(selected);
+      resetUI();
+    });
+
+    // Init
+    buildGrid();
     resetUI();
   </script>
 </body>
