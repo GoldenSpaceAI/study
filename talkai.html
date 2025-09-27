@@ -7,9 +7,11 @@
   <style>
     body {
       margin: 0;
-      font-family: system-ui, sans-serif;
-      background: radial-gradient(circle at top, #1a2238, #0b1020);
-      color: #f5f7fb;
+      font-family: "Inter", system-ui, sans-serif;
+      background: url('https://www.transparenttextures.com/patterns/cubes.png'),
+                  linear-gradient(135deg, #fdfbfb, #ebedee);
+      background-size: cover;
+      color: #222;
       display: flex;
       flex-direction: column;
       height: 100vh;
@@ -19,38 +21,79 @@
       background: linear-gradient(90deg, #ffd54a, #ffb300);
       color: #000;
       font-weight: bold;
-      font-size: 20px;
+      font-size: 22px;
       text-align: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,.3);
+      box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    }
+    #chat-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 20px;
+      overflow-y: auto;
     }
     #chat {
       flex: 1;
-      overflow-y: auto;
+      max-width: 900px;
+      background: rgba(255,255,255,0.75);
+      backdrop-filter: blur(12px);
+      border-radius: 16px;
       padding: 20px;
+      overflow-y: auto;
+      box-shadow: 0 8px 20px rgba(0,0,0,.15);
+      animation: fadeIn .4s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     .msg {
-      max-width: 70%;
-      margin: 10px 0;
+      display: flex;
+      align-items: flex-start;
+      margin: 14px 0;
+      gap: 10px;
+    }
+    .bubble {
       padding: 12px 16px;
-      border-radius: 12px;
+      border-radius: 14px;
       line-height: 1.5;
+      max-width: 75%;
+      animation: pop .3s ease;
       word-wrap: break-word;
     }
-    .user {
-      background: #1b244a;
-      margin-left: auto;
-      border: 1px solid rgba(255,255,255,.12);
+    @keyframes pop {
+      from { transform: scale(.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
     }
-    .ai {
-      background: #111833;
-      border: 1px solid rgba(255,255,255,.08);
+    .user .bubble {
+      background: #ffd54a;
+      color: #000;
+      margin-left: auto;
+      border-bottom-right-radius: 4px;
+    }
+    .ai .bubble {
+      background: #f1f3f6;
+      color: #222;
       margin-right: auto;
+      border-bottom-left-radius: 4px;
       position: relative;
+    }
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      background: #eee;
+      box-shadow: 0 2px 6px rgba(0,0,0,.2);
     }
     .speak-btn {
       display: inline-block;
       margin-top: 6px;
-      background: #ffd54a;
+      background: #ffb300;
       color: #000;
       font-weight: bold;
       padding: 4px 8px;
@@ -60,25 +103,29 @@
     }
     #inputBar {
       display: flex;
-      padding: 12px;
-      background: #111833;
-      border-top: 1px solid rgba(255,255,255,.1);
+      padding: 14px;
+      background: rgba(255,255,255,0.8);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(0,0,0,.1);
     }
     #userInput {
       flex: 1;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 15px;
       outline: none;
     }
     button {
       margin-left: 8px;
       border: none;
-      border-radius: 8px;
-      padding: 10px 14px;
+      border-radius: 10px;
+      padding: 10px 16px;
       font-weight: bold;
       cursor: pointer;
+      transition: transform .15s;
     }
+    button:active { transform: scale(.95); }
     .send {
       background: #ffd54a;
       color: #000;
@@ -92,7 +139,9 @@
 <body>
   <header>ChatAI — Professional Assistant</header>
 
-  <div id="chat"></div>
+  <div id="chat-container">
+    <div id="chat"></div>
+  </div>
 
   <div id="inputBar">
     <input id="userInput" type="text" placeholder="Type your message..." />
@@ -108,24 +157,33 @@
 
     // Conversation memory (max 60 messages)
     const conversation = [
-      { role: "system", content: "You are ChatAI, a helpful, professional assistant. Answer clearly and normally." }
+      { role: "system", content: "You are ChatAI, a professional AI assistant. Respond normally in detailed, clear answers." }
     ];
 
     // Add message to UI
     function addMessage(text, sender, speakable=false) {
       const msg = document.createElement("div");
       msg.className = "msg " + sender;
-      msg.textContent = text;
+
+      const avatar = document.createElement("div");
+      avatar.className = "avatar";
+      avatar.textContent = sender === "user" ? "🙂" : "🤖";
+
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      bubble.textContent = text;
 
       if (sender === "ai" && speakable) {
         const speakBtn = document.createElement("div");
         speakBtn.className = "speak-btn";
         speakBtn.textContent = "🔊 Speak";
         speakBtn.onclick = () => speakText(text);
-        msg.appendChild(document.createElement("br"));
-        msg.appendChild(speakBtn);
+        bubble.appendChild(document.createElement("br"));
+        bubble.appendChild(speakBtn);
       }
 
+      msg.appendChild(avatar);
+      msg.appendChild(bubble);
       chat.appendChild(msg);
       chat.scrollTop = chat.scrollHeight;
     }
