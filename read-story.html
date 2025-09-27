@@ -3,257 +3,133 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Read Story — Guided Session</title>
+  <title>Read Story — AI Assisted</title>
   <style>
-    :root{--bg:#0b1020;--card:#111833;--text:#f5f7fb;--muted:#b8c0e0;--brand:#ffd54a;--brand2:#ffb300;--ring:rgba(255,213,74,.35);--ok:#21c17a;--warn:#ff6b6b;--ink:#0b1020}
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--text);background:radial-gradient(1200px 600px at 85% -10%, rgba(255,213,74,.15), transparent 40%),radial-gradient(900px 600px at -10% 120%, rgba(116,130,255,.15), transparent 35%),var(--bg)}
-    .wrap{max-width:1100px;margin:0 auto;padding:24px}
-    header{display:flex;align-items:center;gap:14px;margin-bottom:18px}
-    .logo{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#2a2000;font-weight:800;box-shadow:0 8px 24px rgba(255,213,74,.25)}
-    h1{margin:0;font-size:clamp(20px,3vw,28px)}
-    p.lead{margin:.35rem 0 0;color:var(--muted)}
-    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;margin-top:16px}
-    .col-6{grid-column:span 12}
-    @media(min-width:900px){.col-6{grid-column:span 6}}
-    .card{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px}
-    .story{cursor:pointer}
-    .story h3{margin:0 0 6px;font-size:18px}
-    .story p{margin:0;color:var(--muted);font-size:14px}
-    .story[aria-selected="true"]{outline:3px solid var(--ring)}
-    .panel{margin-top:18px;display:grid;grid-template-columns:1fr;gap:16px}
-    .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-    .controls button{border:none;background:linear-gradient(180deg,var(--brand),var(--brand2));color:var(--ink);padding:10px 14px;border-radius:12px;font-weight:800;cursor:pointer;box-shadow:0 8px 18px rgba(255,213,74,.25)}
-    .controls button.secondary{background:#1b244a;color:var(--text);box-shadow:none;border:1px solid rgba(255,255,255,.12)}
-    .controls .badge{min-width:110px;text-align:center;font-variant-numeric:tabular-nums;background:#1b244a;padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12)}
-    .reading{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px;line-height:1.65}
-    .reading[hidden]{display:none}
-    .reading h4{margin:0 0 10px}
-    .reading ol{margin:0;padding-left:20px}
-    .reading li{margin:0 0 6px}
-    .notice{padding:12px 14px;border-radius:12px;background:#1b244a;border:1px solid rgba(255,255,255,.12);color:var(--muted)}
-    .success{background:rgba(33,193,122,.15);border-color:rgba(33,193,122,.4);color:#bff2d9}
-    .error{background:rgba(255,107,107,.15);border-color:rgba(255,107,107,.35);color:#ffd1d1}
-    .pill{display:inline-flex;align-items:center;gap:6px;background:#2a345f;border:1px solid rgba(255,255,255,.12);padding:6px 10px;border-radius:999px;font-size:12px}
-    .row{display:flex;gap:8px;flex-wrap:wrap}
-    a.link{color:var(--brand)}
+    body { font-family: sans-serif; background:#0b1020; color:#f5f7fb; margin:0; padding:20px; }
+    h1 { color:#ffd54a; }
+    .controls { margin:10px 0; }
+    button { padding:10px 16px; margin-right:8px; border:none; border-radius:8px; font-weight:bold; cursor:pointer; }
+    button.start { background:#ffd54a; color:#000; }
+    button.finish { background:#1b244a; color:#fff; }
+    .story, .spoken { margin-top:20px; padding:16px; border-radius:8px; background:#111833; }
+    .story h3, .spoken h3 { margin-top:0; }
+    .spoken-text { white-space:pre-wrap; background:#222; padding:10px; border-radius:6px; }
+    .result { margin-top:20px; padding:14px; border-radius:8px; background:#1b244a; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div class="logo">🎙️</div>
-      <div>
-        <h1>Read Story — Guided Session</h1>
-        <p class="lead">Lamar picks a story (2 options). There are 30 lines of text. Later, the AI will listen and report mistakes. Each mistake deducts <strong>100,000</strong> from a starting prize of <strong>1,000,000</strong>.</p>
-      </div>
-    </header>
+  <h1>Read Story — Guided by AI 🎙️</h1>
 
-    <!-- Story choices (2) -->
-    <div class="grid" id="storyGrid" role="listbox" aria-label="Choose a story">
-      <article class="card story col-6" role="option" tabindex="0" data-id="a">
-        <h3>Story A — "Morning at the River"</h3>
-        <p>A calm morning scene with clear, simple sentences ideal for reading practice.</p>
-      </article>
-      <article class="card story col-6" role="option" tabindex="0" data-id="b">
-        <h3>Story B — "City of Small Wonders"</h3>
-        <p>Short city moments that focus on articulation and rhythm.</p>
-      </article>
-    </div>
-
-    <section class="panel">
-      <div class="controls">
-        <button id="startBtn" aria-disabled="true">Start Reading</button>
-        <button id="finishBtn" class="secondary" disabled>Finish</button>
-        <div class="badge" id="mistakesBadge">Mistakes: 0</div>
-        <div class="badge" id="awardBadge">Award: 1,000,000</div>
-        <div id="status" class="notice" role="status">Select a story to begin.</div>
-      </div>
-
-      <!-- Reading area -->
-      <div id="reading" class="reading" hidden aria-live="polite">
-        <h4 id="readingTitle"></h4>
-        <ol id="readingList"></ol>
-      </div>
-
-      <!-- Mistake log (chips) + Dev hooks -->
-      <div class="row" id="mistakeChips" aria-label="Mistake log"></div>
-      <div class="notice" id="integrationHint">
-        Dev note: When AI detects a wrong word, call <code>window.reportMistake({ segmentIndex, expected, heard })</code>.
-        Finishing will POST to <code>/api/points/add</code> with <code>{ points, reason: 'read-story guided', storyId, mistakes }</code>.
-      </div>
-    </section>
-
-    <p style="margin-top:22px"><a class="link" href="index.html">← Back to Home</a></p>
+  <div class="controls">
+    <button id="startBtn" class="start">Start Reading</button>
+    <button id="finishBtn" class="finish" disabled>Finish</button>
   </div>
 
+  <!-- Real story text -->
+  <div class="story">
+    <h3>Story Text</h3>
+    <p id="storyText">
+      The sun yawns over the quiet hills. Mist floats above the slow river.
+      A heron stands like a tall statue. Tiny fish sparkle near the shore.
+      Reeds whisper in the soft wind. A turtle blinks from a warm rock.
+    </p>
+  </div>
+
+  <!-- Spoken transcript -->
+  <div class="spoken">
+    <h3>Lamar’s Spoken Words</h3>
+    <div id="spokenText" class="spoken-text">(not started yet)</div>
+  </div>
+
+  <!-- AI Score -->
+  <div id="result" class="result">No score yet.</div>
+
   <script>
-    // --- Config ---
-    const BASE_PRIZE = 1_000_000;
-    const PENALTY = 100_000;
-    const SERVER_ENDPOINT = '/api/points/add';
-    const LOCAL_POINTS_KEY = 'studyRewards:points';
+    const startBtn = document.getElementById("startBtn");
+    const finishBtn = document.getElementById("finishBtn");
+    const storyText = document.getElementById("storyText").innerText;
+    const spokenDiv = document.getElementById("spokenText");
+    const resultDiv = document.getElementById("result");
 
-    // --- Two stories, 30 short lines each ---
-    const A_LINES = [
-      'The sun yawns over the quiet hills.',
-      'Mist floats above the slow river.',
-      'A heron stands like a tall statue.',
-      'Tiny fish sparkle near the shore.',
-      'Reeds whisper in the soft wind.',
-      'A turtle blinks from a warm rock.',
-      'Boats rest with ropes tied loose.',
-      'Water bugs draw circles and dots.',
-      'A dragonfly hovers like a kite.',
-      'Leaves drift and spin, then stop.',
-      'A boy tosses a flat stone.',
-      'The stone skips three bright rings.',
-      'The boy laughs and tries again.',
-      'The river keeps his secret skips.',
-      'Clouds move like slow parade floats.',
-      'Far trees wear coats of light.',
-      'A dog pads close to the bank.',
-      'He sniffs the air and wags once.',
-      'Somewhere, a bell taps the hour.',
-      'The world feels new and kind.',
-      'The sun climbs, gold on the water.',
-      'A breeze lifts the boy’s hair.',
-      'He breathes in cool morning air.',
-      'He thinks of stories to tell.',
-      'The dog lies down and sighs.',
-      'The heron opens its great wings.',
-      'It rises, slow and sure.',
-      'Ripples widen then fade away.',
-      'The river keeps the morning safe.',
-      'Day begins with a gentle smile.'
-    ];
+    let recognition;
+    let isListening = false;
+    let spokenFull = "";
 
-    const B_LINES = [
-      'The city wakes with a soft hum.',
-      'Windows blink on like tiny stars.',
-      'A baker lifts warm bread trays.',
-      'Footsteps paint dots on the street.',
-      'A tram rings a bright hello.',
-      'Pigeons dance beside a bench.',
-      'A child counts the passing bikes.',
-      'Clouds sail between tall roofs.',
-      'A florist opens a shy tulip.',
-      'The air smells sweet and sharp.',
-      'A bus door sighs then closes.',
-      'Shoelaces slap like gentle rain.',
-      'A writer sips a quiet plan.',
-      'Newspapers fold into wings.',
-      'A clock tower clears its throat.',
-      'An artist lines a sketch with light.',
-      'Market stalls bloom with color.',
-      'Coins clink like tiny bells.',
-      'A taxi blinks an amber wink.',
-      'A window cat rules the sun.',
-      'Friends share crumbs with a laugh.',
-      'The tram returns, proud and bright.',
-      'A breeze turns one loose page.',
-      'A painter nods at the sky.',
-      'Shadows stretch and softly blur.',
-      'A drummer taps a patient beat.',
-      'Sidewalks hold a thousand tales.',
-      'The city hums a gentle tune.',
-      'Evening leans in close to hear.',
-      'Lights bloom like quiet flowers.'
-    ];
-
-    const STORIES = {
-      a: { title: 'Morning at the River', lines: A_LINES },
-      b: { title: 'City of Small Wonders', lines: B_LINES }
-    };
-
-    // --- State ---
-    let selected = null;
-    let running = false;
-    let mistakes = 0;
-
-    // --- DOM ---
-    const storyGrid = document.getElementById('storyGrid');
-    const startBtn = document.getElementById('startBtn');
-    const finishBtn = document.getElementById('finishBtn');
-    const statusEl = document.getElementById('status');
-    const reading = document.getElementById('reading');
-    const readingTitle = document.getElementById('readingTitle');
-    const readingList = document.getElementById('readingList');
-    const mistakesBadge = document.getElementById('mistakesBadge');
-    const awardBadge = document.getElementById('awardBadge');
-    const chips = document.getElementById('mistakeChips');
-
-    // helpers
-    function calcAward(){
-      const a = Math.max(0, BASE_PRIZE - mistakes * PENALTY);
-      awardBadge.textContent = 'Award: ' + a.toLocaleString();
-      return a;
-    }
-    function setMistakes(n){ mistakes = Math.max(0, n); mistakesBadge.textContent = 'Mistakes: ' + mistakes; calcAward(); }
-    function reset(){ running=false; setMistakes(0); finishBtn.disabled=true; reading.hidden=true; statusEl.className='notice'; statusEl.textContent = selected? 'Story selected. Press Start.' : 'Select a story to begin.'; startBtn[selected? 'removeAttribute':'setAttribute']('aria-disabled','true'); }
-
-    // story selection
-    storyGrid.addEventListener('click', (e)=>{
-      const card=e.target.closest('.story'); if(!card||running) return;
-      document.querySelectorAll('.story').forEach(el=>el.setAttribute('aria-selected','false'));
-      card.setAttribute('aria-selected','true');
-      selected = card.dataset.id;
-      statusEl.textContent = 'Story selected. Press Start.';
-      startBtn.removeAttribute('aria-disabled');
-      // prepare reading list
-      const {title, lines} = STORIES[selected];
-      readingTitle.textContent = title;
-      readingList.innerHTML = lines.map((t,i)=>`<li data-index="${i}"><span>${t}</span></li>`).join('');
-      chips.innerHTML = '';
-    });
-
-    // start session
-    startBtn.addEventListener('click', ()=>{
-      if(!selected||running) return; running=true; reading.hidden=false; finishBtn.disabled=false;
-      statusEl.textContent = 'Reading… AI will listen and report mistakes.';
-    });
-
-    // finish session
-    finishBtn.addEventListener('click', async()=>{
-      if(!running) return; running=false; finishBtn.disabled=true;
-      const award = calcAward();
-      statusEl.className='notice'; statusEl.textContent = 'Submitting score…';
-      const payload = { points: award, reason: 'read-story guided', storyId: selected, mistakes };
-      try{
-        const res = await fetch(SERVER_ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-        if(!res.ok) throw new Error('Server returned '+res.status);
-        const data = await res.json().catch(()=>({}));
-        statusEl.className='notice success';
-        statusEl.textContent = `Done! Awarded ${award.toLocaleString()} points${data.total? ' (total: '+data.total.toLocaleString()+')' : ''}.`;
-      }catch(err){
-        // local fallback
-        const cur = parseInt(localStorage.getItem(LOCAL_POINTS_KEY)||'0',10) || 0;
-        const total = cur + award; localStorage.setItem(LOCAL_POINTS_KEY, String(total));
-        statusEl.className='notice success';
-        statusEl.textContent = `Done! Award saved locally: +${award.toLocaleString()} (total: ${total.toLocaleString()}).`;
+    // Setup Web Speech API
+    function initSpeech() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert("Speech Recognition not supported in this browser.");
+        return null;
       }
-    });
+      const recog = new SpeechRecognition();
+      recog.lang = "en-US";
+      recog.continuous = true;
+      recog.interimResults = true;
+      return recog;
+    }
 
-    // ---- AI Integration Hook ----
-    // Call window.reportMistake({ segmentIndex, expected, heard }) to log a mistake.
-    window.reportMistake = ({ segmentIndex, expected, heard })=>{
-      if(!running) return;
-      setMistakes(mistakes + 1);
-      const chip = document.createElement('span');
-      chip.className = 'pill';
-      chip.textContent = `#${segmentIndex+1} wrong: “${heard||'?'}” → “${expected||'?'}”`;
-      chips.appendChild(chip);
-      // highlight the line
-      const li = readingList.querySelector(`li[data-index="${segmentIndex}"]`);
-      if(li){ li.style.background = 'rgba(255,107,107,.15)'; li.style.borderRadius='8px'; }
+    // Start reading
+    startBtn.onclick = () => {
+      recognition = initSpeech();
+      if (!recognition) return;
+
+      spokenFull = "";
+      spokenDiv.textContent = "(Listening...)";
+      resultDiv.textContent = "AI will score after you finish.";
+
+      recognition.onresult = (event) => {
+        let interim = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            spokenFull += transcript + " ";
+          } else {
+            interim += transcript;
+          }
+        }
+        spokenDiv.textContent = spokenFull + " " + interim;
+      };
+
+      recognition.start();
+      isListening = true;
+      startBtn.disabled = true;
+      finishBtn.disabled = false;
     };
 
-    // manual test button (dev only)
-    // document.addEventListener('keydown', (e)=>{ if(e.key==='m'){ window.reportMistake({segmentIndex:0,expected:'test',heard:'text'}); } });
+    // Finish reading and send to AI
+    finishBtn.onclick = async () => {
+      if (isListening && recognition) {
+        recognition.stop();
+        isListening = false;
+      }
+      finishBtn.disabled = true;
+      startBtn.disabled = false;
 
-    // init
-    reset(); calcAward();
+      const heard = spokenFull.trim();
+      spokenDiv.textContent = heard || "(No speech detected)";
+
+      // Call backend /api/check
+      resultDiv.textContent = "Scoring with AI...";
+      try {
+        const res = await fetch("/api/check", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            expectedLine: storyText,
+            heardLine: heard
+          })
+        });
+        const data = await res.json();
+
+        // Extract AI message
+        const aiMessage = data?.choices?.[0]?.message?.content || JSON.stringify(data);
+        resultDiv.textContent = "AI Result: " + aiMessage;
+      } catch (err) {
+        console.error(err);
+        resultDiv.textContent = "Error contacting AI.";
+      }
+    };
   </script>
 </body>
 </html>
